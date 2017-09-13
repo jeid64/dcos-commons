@@ -1,0 +1,4 @@
+PACKAGE_NAME = 'dad'
+SERVICE_NAME = 'dad'
+DEFAULT_TASK_COUNT = 1
+
