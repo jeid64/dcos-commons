@@ -3,8 +3,8 @@ scheduler:
   principal: {{FRAMEWORK_PRINCIPAL}}
   user: {{FRAMEWORK_USER}}
 pods:
-  dad:
-    count: {{NODE_COUNT}}
+  bootstrap:
+    count: 1
     placement: {{NODE_PLACEMENT}}
     {{#ENABLE_VIRTUAL_NETWORK}}
     networks:
@@ -22,3 +22,92 @@ pods:
           type: {{NODE_DISK_TYPE}}
           size: {{NODE_DISK}}
         env:
+          SLEEP_DURATION: 100000000000
+  master:
+    count: 1
+    placement: {{NODE_PLACEMENT}}
+    {{#ENABLE_VIRTUAL_NETWORK}}
+    networks:
+      {{VIRTUAL_NETWORK_NAME}}:
+        labels: {{VIRTUAL_NETWORK_PLUGIN_LABELS}}
+    {{/ENABLE_VIRTUAL_NETWORK}}
+    uris:
+        - {{BOOTSTRAP_URI}}
+    image: {{DCOS_DAD_DOCKER_IMAGE}}
+    tasks:
+      node:
+        goal: RUNNING
+        cmd: >
+                rm -rf var/*
+
+                printf "\n\n ######  Starting DAD master -- ${TASK_NAME} ###### \n"
+
+                /usr/lib/systemd/systemd --system
+
+                printf "hello"
+
+                sleep 1000000000000000
+        cpus: {{NODE_CPUS}}
+        memory: {{NODE_MEM}}
+        volume:
+          path: "var"
+          type: {{NODE_DISK_TYPE}}
+          size: {{NODE_DISK}}
+        env:
+          SLEEP_DURATION: 100000000000
+  agent:
+    count: 1
+    placement: {{NODE_PLACEMENT}}
+    {{#ENABLE_VIRTUAL_NETWORK}}
+    networks:
+      {{VIRTUAL_NETWORK_NAME}}:
+        labels: {{VIRTUAL_NETWORK_PLUGIN_LABELS}}
+    {{/ENABLE_VIRTUAL_NETWORK}}
+    tasks:
+      node:
+        goal: RUNNING
+        cmd: "echo dad >> dad-container-path/output && sleep $SLEEP_DURATION"
+        cpus: {{NODE_CPUS}}
+        memory: {{NODE_MEM}}
+        volume:
+          path: "dad-container-path"
+          type: {{NODE_DISK_TYPE}}
+          size: {{NODE_DISK}}
+        env:
+          SLEEP_DURATION: 100000000000
+  public-agent:
+    count: 1
+    placement: {{NODE_PLACEMENT}}
+    {{#ENABLE_VIRTUAL_NETWORK}}
+    networks:
+      {{VIRTUAL_NETWORK_NAME}}:
+        labels: {{VIRTUAL_NETWORK_PLUGIN_LABELS}}
+    {{/ENABLE_VIRTUAL_NETWORK}}
+    tasks:
+      node:
+        goal: RUNNING
+        cmd: "echo dad >> dad-container-path/output && sleep $SLEEP_DURATION"
+        cpus: {{NODE_CPUS}}
+        memory: {{NODE_MEM}}
+        volume:
+          path: "dad-container-path"
+          type: {{NODE_DISK_TYPE}}
+          size: {{NODE_DISK}}
+        env:
+          SLEEP_DURATION: 100000000000
+plans:
+  deploy:
+    strategy: serial
+    phases:
+      bootstrap-phase:
+        strategy: serial
+        pod: bootstrap
+      master-phase:
+        strategy: parallel
+        pod: master
+      agent-phase:
+        strategy: parallel
+        pod: agent
+      public-agent-phase:
+        strategy: parallel
+        pod: public-agent

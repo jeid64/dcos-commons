@@ -50,7 +50,9 @@
     "MESOS_MODULES": "{\"libraries\": [{\"file\": \"libdcos_security.so\", \"modules\": [{\"name\": \"com_mesosphere_dcos_ClassicRPCAuthenticatee\"}]}]}",
     "MESOS_AUTHENTICATEE": "com_mesosphere_dcos_ClassicRPCAuthenticatee",
     {{/service.service_account_secret}}
-    "LIBMESOS_URI": "{{resource.assets.uris.libmesos-bundle-tar-gz}}"
+    "LIBMESOS_URI": "{{resource.assets.uris.libmesos-bundle-tar-gz}}",
+    "DCOS_DAD_DOCKER_IMAGE": "{{resource.assets.container.docker.dcos-dad}}",
+    "BOOTSTRAP_URI": "{{resource.assets.uris.bootstrap-zip}}"
   },
   "uris": [
     "{{resource.assets.uris.jre-tar-gz}}",
