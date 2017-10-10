@@ -10,7 +10,8 @@
       "libmesos-bundle-tar-gz": "{{libmesos-bundle-url}}",
       "scheduler-zip": "{{artifact-dir}}/dad-scheduler.zip",
       "executor-zip": "{{artifact-dir}}/executor.zip",
-      "bootstrap-zip": "{{artifact-dir}}/bootstrap.zip"
+      "bootstrap-zip": "{{artifact-dir}}/bootstrap.zip",
+      "dad-git-archive-zip": "https://github.com/jeid64/dcos-docker/archive/dcos-dad-sdk.zip"
     }
   },
   "images": {

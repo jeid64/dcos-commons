@@ -30,7 +30,7 @@
           "virtual_network_enabled": {
             "description": "Enable virtual networking",
             "type": "boolean",
-            "default": false
+            "default": true
           },
           "virtual_network_name": {
             "description": "The name of the virtual network to join",
@@ -81,13 +81,13 @@
             "title": "CPU count",
             "description": "Template pod CPU requirements",
             "type": "number",
-            "default":0.1
+            "default":2
           },
           "mem": {
             "title": "Memory size (MB)",
             "description": "Template pod mem requirements (in MB)",
             "type": "integer",
-            "default":252
+            "default":2500
           },
           "disk": {
             "title": "Disk size (MB)",

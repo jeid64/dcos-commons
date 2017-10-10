@@ -6,23 +6,69 @@ pods:
   bootstrap:
     count: 1
     placement: {{NODE_PLACEMENT}}
-    {{#ENABLE_VIRTUAL_NETWORK}}
-    networks:
-      {{VIRTUAL_NETWORK_NAME}}:
-        labels: {{VIRTUAL_NETWORK_PLUGIN_LABELS}}
-    {{/ENABLE_VIRTUAL_NETWORK}}
+    uris:
+       - {{DAD_GIT_ARCHIVE_ZIP_URI}}
     tasks:
       node:
         goal: RUNNING
-        cmd: "echo dad >> dad-container-path/output && sleep $SLEEP_DURATION"
-        cpus: {{NODE_CPUS}}
-        memory: {{NODE_MEM}}
-        volume:
-          path: "dad-container-path"
-          type: {{NODE_DISK_TYPE}}
-          size: {{NODE_DISK}}
+        cmd: >
+                env
+
+                cd dcos-docker-dcos-dad-sdk/dcos-dad
+
+                export dcos_dad_bootstrap_port=9200
+
+                export dcos_dad_bootstrap_ip=bootstraphttp.$FRAMEWORK_NAME.l4lb.thisdcos.directory
+
+                export dcos_dad_framework_name=$FRAMEWORK_NAME
+
+                mkdir genconf
+
+                mkdir genconf/serve
+
+                mkdir genconf/tmp
+
+                cat bootstrap_serve/dcos-dad-envfile-master | sed -e "s/dcos_dad_bootstrap_ip/$dcos_dad_bootstrap_ip/;s/dcos_dad_bootstrap_port/$dcos_dad_bootstrap_port/" >| genconf/serve/dcos-dad-envfile-master
+
+                cat bootstrap_serve/dcos-dad-envfile-slave | sed -e "s/dcos_dad_bootstrap_ip/$dcos_dad_bootstrap_ip/;s/dcos_dad_bootstrap_port/$dcos_dad_bootstrap_port/;s/dcos_dad_slave_cpu/$dcos_dad_slave_cpu/;s/dcos_dad_slave_mem/$dcos_dad_slave_mem/" >| genconf/serve/dcos-dad-envfile-slave
+
+                cat bootstrap_serve/dcos-dad-envfile-slave-public | sed -e "s/dcos_dad_bootstrap_ip/$dcos_dad_bootstrap_ip/;s/dcos_dad_bootstrap_port/$dcos_dad_bootstrap_port/;s/dcos_dad_slave_cpu/$dcos_dad_slave_cpu/;s/dcos_dad_slave_mem/$dcos_dad_slave_mem/" >| genconf/serve/dcos-dad-envfile-slave-public
+
+                cat bootstrap_serve/config.yaml | sed -e "s/dcos_dad_num_masters/$dcos_dad_num_masters/;s/dcos_dad_bootstrap_ip/$dcos_dad_bootstrap_ip/;s/dcos_dad_bootstrap_port/$dcos_dad_bootstrap_port/;s/dcos_dad_framework_name/$dcos_dad_framework_name/;s/dcos_dad_cryptoid/$dcos_dad_cryptoid/;s/dcos_dad_upstream_resolver/$dcos_dad_upstream_resolver/;s/dcos_dad_prefix/$dcos_dad_prefix/" >| genconf/config.yaml
+
+                cp bootstrap_serve/ip-detect genconf/ip-detect
+
+                curl -o dcos_generate_config.sh $dcos_generate_config_url
+
+                sh dcos_generate_config.sh
+
+                echo "Running bootstrap nginx container."
+
+                docker run -p $PORT_HTTP:80 -v $PWD/genconf/serve:/usr/share/nginx/html:ro nginx
+        cpus: 0.1
+        memory: 128
         env:
-          SLEEP_DURATION: 100000000000
+          dcos_generate_config_url: "abc"
+          dcos_dad_upstream_resolver: "10.0.5.85"
+          dcos_dad_num_masters: "1"
+          dcos_dad_vhost: "ignoreme"
+          dcos_dad_cryptoid: "wyypue9a8hjxynb5kow5oksgtpl5j9bptmin8sohthsgrdlss65y"
+          dcos_dad_prefix: "jeid"
+          dcos_dad_slave_cpu: "2"
+          dcos_dad_slave_mem: "2500"
+        ports:
+            bootstraphttp:
+                port: 0
+                advertise: true
+                env-key: PORT_HTTP
+                vip:
+                   prefix: bootstraphttp
+                   port: 9200
+        readiness-check:
+            cmd: "curl -k -I -s -f http://$TASK_NAME.$FRAMEWORK_HOST:$PORT_HTTP/dcos-dad-envfile-master"
+            interval: 5
+            delay: 10
+            timeout: 10
   master:
     count: 1
     placement: {{NODE_PLACEMENT}}
@@ -33,6 +79,7 @@ pods:
     {{/ENABLE_VIRTUAL_NETWORK}}
     uris:
         - {{BOOTSTRAP_URI}}
+        - "file:////home/core/.ssh/authorized_keys"
     image: {{DCOS_DAD_DOCKER_IMAGE}}
     tasks:
       node:
@@ -40,15 +87,15 @@ pods:
         cmd: >
                 rm -rf var/*
 
+                curl -O bootstraphttp.$FRAMEWORK_NAME.l4lb.thisdcos.directory:9200/dcos-dad-envfile-master
+
+                ls
+
                 printf "\n\n ######  Starting DAD master -- ${TASK_NAME} ###### \n"
 
-                /usr/lib/systemd/systemd --system
-
-                printf "hello"
-
-                sleep 1000000000000000
-        cpus: {{NODE_CPUS}}
-        memory: {{NODE_MEM}}
+                unshare -p -f --mount-proc=/proc /usr/lib/systemd/systemd --system
+        cpus: 2
+        memory: 4096
         volume:
           path: "var"
           type: {{NODE_DISK_TYPE}}
@@ -63,18 +110,29 @@ pods:
       {{VIRTUAL_NETWORK_NAME}}:
         labels: {{VIRTUAL_NETWORK_PLUGIN_LABELS}}
     {{/ENABLE_VIRTUAL_NETWORK}}
+    uris:
+        - {{BOOTSTRAP_URI}}
+        - "file:////home/core/.ssh/authorized_keys"
+    image: {{DCOS_DAD_DOCKER_IMAGE}}
     tasks:
       node:
         goal: RUNNING
-        cmd: "echo dad >> dad-container-path/output && sleep $SLEEP_DURATION"
+        cmd: >
+                rm -rf var/*
+
+                curl -O bootstraphttp.$FRAMEWORK_NAME.l4lb.thisdcos.directory:9200/dcos-dad-envfile-slave
+
+                ls
+
+                printf "\n\n ######  Starting DAD slave private -- ${TASK_NAME} ###### \n"
+
+                unshare -p -f --mount-proc=/proc /usr/lib/systemd/systemd --system
         cpus: {{NODE_CPUS}}
         memory: {{NODE_MEM}}
         volume:
-          path: "dad-container-path"
+          path: "docker-storage-dir"
           type: {{NODE_DISK_TYPE}}
           size: {{NODE_DISK}}
-        env:
-          SLEEP_DURATION: 100000000000
   public-agent:
     count: 1
     placement: {{NODE_PLACEMENT}}
@@ -83,18 +141,29 @@ pods:
       {{VIRTUAL_NETWORK_NAME}}:
         labels: {{VIRTUAL_NETWORK_PLUGIN_LABELS}}
     {{/ENABLE_VIRTUAL_NETWORK}}
+    uris:
+        - {{BOOTSTRAP_URI}}
+        - "file:////home/core/.ssh/authorized_keys"
+    image: {{DCOS_DAD_DOCKER_IMAGE}}
     tasks:
       node:
         goal: RUNNING
-        cmd: "echo dad >> dad-container-path/output && sleep $SLEEP_DURATION"
+        cmd: >
+                rm -rf var/*
+
+                curl -O bootstraphttp.$FRAMEWORK_NAME.l4lb.thisdcos.directory:9200/dcos-dad-envfile-slave-public
+
+                ls
+
+                printf "\n\n ######  Starting DAD slave public -- ${TASK_NAME} ###### \n"
+
+                unshare -p -f --mount-proc=/proc /usr/lib/systemd/systemd --system
         cpus: {{NODE_CPUS}}
         memory: {{NODE_MEM}}
         volume:
-          path: "dad-container-path"
+          path: "docker-storage-dir"
           type: {{NODE_DISK_TYPE}}
           size: {{NODE_DISK}}
-        env:
-          SLEEP_DURATION: 100000000000
 plans:
   deploy:
     strategy: serial

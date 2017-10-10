@@ -52,12 +52,14 @@
     {{/service.service_account_secret}}
     "LIBMESOS_URI": "{{resource.assets.uris.libmesos-bundle-tar-gz}}",
     "DCOS_DAD_DOCKER_IMAGE": "{{resource.assets.container.docker.dcos-dad}}",
-    "BOOTSTRAP_URI": "{{resource.assets.uris.bootstrap-zip}}"
+    "BOOTSTRAP_URI": "{{resource.assets.uris.bootstrap-zip}}",
+    "DAD_GIT_ARCHIVE_ZIP_URI": "{{resource.assets.uris.dad-git-archive-zip}}"
   },
   "uris": [
     "{{resource.assets.uris.jre-tar-gz}}",
     "{{resource.assets.uris.scheduler-zip}}",
-    "{{resource.assets.uris.libmesos-bundle-tar-gz}}"
+    "{{resource.assets.uris.libmesos-bundle-tar-gz}}",
+    "{{resource.assets.uris.dad-git-archive-zip}}"
   ],
   "upgradeStrategy":{
     "minimumHealthCapacity": 0,
