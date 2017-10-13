@@ -31,17 +31,37 @@
     "FRAMEWORK_PRINCIPAL": "{{service.service_account}}",
     "FRAMEWORK_LOG_LEVEL": "{{service.log_level}}",
 
-    "NODE_COUNT": "{{node.count}}",
-    "NODE_PLACEMENT": "{{node.placement_constraint}}",
     {{#service.virtual_network_enabled}}
     "ENABLE_VIRTUAL_NETWORK": "yes",
     "VIRTUAL_NETWORK_NAME": "{{service.virtual_network_name}}",
     "VIRTUAL_NETWORK_PLUGIN_LABELS": "{{service.virtual_network_plugin_labels}}",
     {{/service.virtual_network_enabled}}
-    "NODE_CPUS": "{{node.cpus}}",
-    "NODE_MEM": "{{node.mem}}",
-    "NODE_DISK": "{{node.disk}}",
-    "NODE_DISK_TYPE": "{{node.disk_type}}",
+    
+    "MASTER_COUNT": "{{master.count}}",
+    "MASTER_PLACEMENT": "{{master.placement_constraint}}",
+    "MASTER_CPUS": "{{master.cpus}}",
+    "MASTER_MEM": "{{master.mem}}",
+    "MASTER_DISK": "{{master.disk}}",
+    "MASTER_DISK_TYPE": "{{master.disk_type}}",
+    
+    "PRIVATE_AGENT_COUNT": "{{private-agent.count}}",
+    "PRIVATE_AGENT_PLACEMENT": "{{private-agent.placement_constraint}}",
+    "PRIVATE_AGENT_CPUS": "{{private-agent.cpus}}",
+    "PRIVATE_AGENT_MEM": "{{private-agent.mem}}",
+    "PRIVATE_AGENT_DISK": "{{private-agent.disk}}",
+    "PRIVATE_AGENT_DISK_TYPE": "{{private-agent.disk_type}}",
+    
+    "PUBLIC_AGENT_COUNT": "{{public-agent.count}}",
+    "PUBLIC_AGENT_PLACEMENT": "{{public-agent.placement_constraint}}",
+    "PUBLIC_AGENT_CPUS": "{{public-agent.cpus}}",
+    "PUBLIC_AGENT_MEM": "{{public-agent.mem}}",
+    "PUBLIC_AGENT_DISK": "{{public-agent.disk}}",
+    "PUBLIC_AGENT_DISK_TYPE": "{{public-agent.disk_type}}",
+    
+    "BOOTSTRAP_COUNT": "{{bootstrap.count}}",
+    "BOOTSTRAP_PLACEMENT": "{{bootstrap.placement_constraint}}",
+    "BOOTSTRAP_CPUS": "{{bootstrap.cpus}}",
+    "BOOTSTRAP_MEM": "{{bootstrap.mem}}",
 
     "JAVA_URI": "{{resource.assets.uris.jre-tar-gz}}",
     "EXECUTOR_URI": "{{resource.assets.uris.executor-zip}}",
