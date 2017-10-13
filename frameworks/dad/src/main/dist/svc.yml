@@ -49,10 +49,10 @@ pods:
         memory: 128
         env:
           dcos_generate_config_url: "abc"
-          dcos_dad_upstream_resolver: "10.0.5.85"
+          dcos_dad_upstream_resolver: "10.0.6.193"
           dcos_dad_num_masters: "1"
           dcos_dad_vhost: "ignoreme"
-          dcos_dad_cryptoid: "wyypue9a8hjxynb5kow5oksgtpl5j9bptmin8sohthsgrdlss65y"
+          dcos_dad_cryptoid: "pchse4rn9tzx3ettslsplwz8bmhwqmgqkl737k4cw9fcfempkmiy"
           dcos_dad_prefix: "jeid"
           dcos_dad_slave_cpu: "2"
           dcos_dad_slave_mem: "2500"
@@ -112,6 +112,7 @@ pods:
     {{/ENABLE_VIRTUAL_NETWORK}}
     uris:
         - {{BOOTSTRAP_URI}}
+        - {{UNSHARE_BINARY}}
         - "file:////home/core/.ssh/authorized_keys"
     image: {{DCOS_DAD_DOCKER_IMAGE}}
     tasks:
@@ -123,10 +124,12 @@ pods:
                 curl -O bootstraphttp.$FRAMEWORK_NAME.l4lb.thisdcos.directory:9200/dcos-dad-envfile-slave
 
                 ls
+                
+                chmod u+x ./unshare
 
                 printf "\n\n ######  Starting DAD slave private -- ${TASK_NAME} ###### \n"
 
-                unshare -p -f --mount-proc=/proc /usr/lib/systemd/systemd --system
+                ./unshare -C -p -f --mount-proc=/proc /usr/lib/systemd/systemd --system
         cpus: {{NODE_CPUS}}
         memory: {{NODE_MEM}}
         volume:
@@ -143,6 +146,7 @@ pods:
     {{/ENABLE_VIRTUAL_NETWORK}}
     uris:
         - {{BOOTSTRAP_URI}}
+        - {{UNSHARE_BINARY}}
         - "file:////home/core/.ssh/authorized_keys"
     image: {{DCOS_DAD_DOCKER_IMAGE}}
     tasks:
@@ -155,9 +159,11 @@ pods:
 
                 ls
 
+                chmod u+x ./unshare
+
                 printf "\n\n ######  Starting DAD slave public -- ${TASK_NAME} ###### \n"
 
-                unshare -p -f --mount-proc=/proc /usr/lib/systemd/systemd --system
+                ./unshare -C -p -f --mount-proc=/proc /usr/lib/systemd/systemd --system
         cpus: {{NODE_CPUS}}
         memory: {{NODE_MEM}}
         volume:

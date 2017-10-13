@@ -11,6 +11,7 @@
       "scheduler-zip": "{{artifact-dir}}/dad-scheduler.zip",
       "executor-zip": "{{artifact-dir}}/executor.zip",
       "bootstrap-zip": "{{artifact-dir}}/bootstrap.zip",
+      "unshare-binary": "{{artifact-dir}}/unshare",
       "dad-git-archive-zip": "https://github.com/jeid64/dcos-docker/archive/dcos-dad-sdk.zip"
     }
   },

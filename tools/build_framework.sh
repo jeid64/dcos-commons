@@ -120,10 +120,10 @@ echo "---"
 
 
 # Verify airgap (except for hello world)
-if [ $FRAMEWORK_NAME != "hello-world" ];
-then
-    ${TOOLS_DIR}/airgap_linter.py ${FRAMEWORK_DIR}
-fi
+#if [ $FRAMEWORK_NAME != "hello-world" ];
+#then
+#    ${TOOLS_DIR}/airgap_linter.py ${FRAMEWORK_DIR}
+#fi
 
 # Ensure executor build up to date
 if [ "$EXECUTOR_DIR" != $DISABLED_VALUE ]; then

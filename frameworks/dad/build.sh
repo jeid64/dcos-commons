@@ -11,4 +11,5 @@ DAD_ISSUES_PATH="http://YOURNAMEHERE.COM/SUPPORT" \
         $FRAMEWORK_DIR \
         --artifact "$BUILD_DIR/executor.zip" \
         --artifact "$BUILD_DIR/$(basename $FRAMEWORK_DIR)-scheduler.zip" \
+        --artifact "$FRAMEWORK_DIR/src/main/dist/unshare" \
         $@
