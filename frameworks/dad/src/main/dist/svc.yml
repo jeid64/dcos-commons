@@ -22,6 +22,10 @@ pods:
 
                 export dcos_dad_framework_name=$FRAMEWORK_NAME
 
+                export dcos_dad_upstream_resolver=$(getent hosts leader.mesos | awk '{ print $1  }')
+
+                export dcos_dad_cryptoid=$(curl localhost:62080/lashup/key/ | jq -r .zbase32_public_key)
+
                 mkdir genconf
 
                 mkdir genconf/serve
@@ -49,10 +53,7 @@ pods:
         memory: 128
         env:
           dcos_generate_config_url: "abc"
-          dcos_dad_upstream_resolver: "10.0.6.193"
           dcos_dad_num_masters: "1"
-          dcos_dad_vhost: "ignoreme"
-          dcos_dad_cryptoid: "pchse4rn9tzx3ettslsplwz8bmhwqmgqkl737k4cw9fcfempkmiy"
           dcos_dad_prefix: "jeid"
           dcos_dad_slave_cpu: "2"
           dcos_dad_slave_mem: "2500"
