@@ -8,6 +8,7 @@ import com.mesosphere.sdk.scheduler.plan.ParentElement;
 import com.mesosphere.sdk.scheduler.plan.Phase;
 import com.mesosphere.sdk.scheduler.plan.Plan;
 import com.mesosphere.sdk.scheduler.plan.PlanManager;
+import com.mesosphere.sdk.scheduler.plan.PlanCoordinator;
 import com.mesosphere.sdk.scheduler.plan.Step;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -35,6 +36,23 @@ import java.util.stream.Collectors;
 
 import static com.mesosphere.sdk.api.ResponseUtils.*;
 
+import com.mesosphere.sdk.scheduler.SchedulerConfig;
+import java.util.stream.Collectors;
+import com.mesosphere.sdk.offer.Constants;
+import com.mesosphere.sdk.state.ConfigStore;
+import com.mesosphere.sdk.state.StateStore;
+import com.mesosphere.sdk.scheduler.plan.*;
+import com.mesosphere.sdk.scheduler.plan.strategy.*;
+
+import com.mesosphere.sdk.config.TaskEnvRouter;
+import com.mesosphere.sdk.offer.Constants;
+import com.mesosphere.sdk.scheduler.SchedulerConfig;
+import com.mesosphere.sdk.scheduler.SchedulerRunner;
+import com.mesosphere.sdk.specification.*;
+import com.mesosphere.sdk.specification.yaml.RawServiceSpec;
+import com.mesosphere.sdk.scheduler.DefaultScheduler;
+import com.mesosphere.sdk.scheduler.SchedulerBuilder;
+
 /**
  * API for management of Plan(s).
  */
@@ -47,6 +65,9 @@ public class PlansResource extends PrettyJsonResource {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final Collection<PlanManager> planManagers = new ArrayList<>();
+    private DefaultPlanCoordinator planCoordinator;
+    private ConfigStore configStore;
+    private StateStore stateStore;
     private final Object planManagersLock = new Object();
 
     /**
@@ -63,11 +84,66 @@ public class PlansResource extends PrettyJsonResource {
     }
 
     /**
+     * Assigns the list of plans to be managed via this endpoint.
+     *
+     * @return this
+     */
+    public PlansResource setPlanCoordinator(DefaultPlanCoordinator planCoordinator) {
+        this.planCoordinator = planCoordinator;
+        return this;
+    }
+
+    public PlansResource setConfigStore(ConfigStore configStore) {
+        this.configStore = configStore;
+        return this;
+    }
+    public PlansResource setStateStore(StateStore stateStore) {
+        this.stateStore = stateStore;
+        return this;
+    }
+    /**
      * Returns list of all configured plans.
      */
     @GET
     @Path("/plans")
     public Response listPlans() {
+        SchedulerConfig schedulerConfig = SchedulerConfig.fromEnv();
+        DefaultPodSpec podSpec = DefaultPodSpec.newBuilder(schedulerConfig.getExecutorURI())
+                                .count(1)
+                                .type("hellome")
+                                .addTask(DefaultTaskSpec.newBuilder()
+                                        .name("hellometaskname")
+                                        .goalState(GoalState.RUNNING)
+                                        .commandSpec(DefaultCommandSpec.newBuilder(Collections.emptyMap())
+                                                .value("echo hello >> hello-container-path/output && sleep 1000")
+                                                .build())
+                                        .resourceSet(DefaultResourceSet
+                                                .newBuilder("hello-world-role", Constants.ANY_ROLE, "hello-world-principal")
+                                                .id("hello-resources")
+                                                .cpus(0.1)
+                                                .memory(256.0)
+                                                .addVolume("ROOT", 5000.0, "hello-container-path")
+                                                .build())
+                                        .build())
+                                .build();
+        Strategy serial = StrategyFactory.generateForPhase("serial");
+        DefaultStepFactory stepFactory = new DefaultStepFactory(configStore, stateStore);
+        DefaultPhaseFactory phaseFactory = new DefaultPhaseFactory(stepFactory);
+        //Plan plan = new DeployPlanFactory(phaseFactory).getPlan()
+        ArrayList<Phase> list_of_phases = new ArrayList<Phase>();
+        Phase phase = phaseFactory.getPhase(podSpec, serial);
+        System.out.println(phase);
+        list_of_phases.add(phase);
+        Plan plan = new DefaultPlan("hellomeplan", list_of_phases);
+        System.out.println(plan);
+        DefaultPlanManager planManager = new DefaultPlanManager(plan);
+        plan.proceed();
+        planCoordinator.planManagers.add(planManager);
+        System.out.println("appended plan");
+        planManagers.add(planManager);
+
+
+
         return jsonOkResponse(new JSONArray(getPlanNames()));
     }
 

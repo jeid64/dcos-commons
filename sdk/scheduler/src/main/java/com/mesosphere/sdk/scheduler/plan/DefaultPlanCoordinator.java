@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 public class DefaultPlanCoordinator implements PlanCoordinator {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultPlanCoordinator.class);
 
-    private final List<PlanManager> planManagers = new LinkedList<>();
+    public final List<PlanManager> planManagers = new LinkedList<>();
 
     public DefaultPlanCoordinator(Collection<PlanManager> planManagers) {
         if (CollectionUtils.isEmpty(planManagers)) {

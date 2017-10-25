@@ -50,7 +50,7 @@ public class DefaultScheduler extends AbstractScheduler {
     private final PlansResource plansResource;
     private final PodResource podResource;
 
-    private PlanCoordinator planCoordinator;
+    private DefaultPlanCoordinator planCoordinator;
     private PlanScheduler planScheduler;
 
     /**
@@ -136,12 +136,17 @@ public class DefaultScheduler extends AbstractScheduler {
                         taskKiller);
         killUnneededAndPendingOverrideTasks(stateStore, taskKiller, PlanUtils.getLaunchableTasks(plans));
 
+        //jeid hacks
         plansResource.setPlanManagers(planCoordinator.getPlanManagers());
+        plansResource.setPlanCoordinator(planCoordinator);
+        plansResource.setStateStore(stateStore);
+        plansResource.setConfigStore(configStore);
+
         podResource.setTaskKiller(taskKiller);
         return planCoordinator;
     }
 
-    private PlanCoordinator buildPlanCoordinator() throws ConfigStoreException {
+    private DefaultPlanCoordinator buildPlanCoordinator() throws ConfigStoreException {
         final Collection<PlanManager> planManagers = new ArrayList<>();
 
         // Deployment plan manager
@@ -321,7 +326,7 @@ public class DefaultScheduler extends AbstractScheduler {
     }
 
     @VisibleForTesting
-    PlanCoordinator getPlanCoordinator() {
+    DefaultPlanCoordinator getPlanCoordinator() {
         return planCoordinator;
     }
 }
