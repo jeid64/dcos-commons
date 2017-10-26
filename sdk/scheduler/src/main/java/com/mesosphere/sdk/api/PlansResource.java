@@ -52,6 +52,14 @@ import com.mesosphere.sdk.specification.*;
 import com.mesosphere.sdk.specification.yaml.RawServiceSpec;
 import com.mesosphere.sdk.scheduler.DefaultScheduler;
 import com.mesosphere.sdk.scheduler.SchedulerBuilder;
+import com.mesosphere.sdk.config.validate.ConfigValidator;
+import com.mesosphere.sdk.config.DefaultConfigurationUpdater;
+import com.mesosphere.sdk.config.ConfigurationUpdater;
+import com.mesosphere.sdk.state.ConfigStoreException;
+import com.mesosphere.sdk.storage.Persister;
+import com.mesosphere.sdk.storage.PersisterCache;
+import com.mesosphere.sdk.storage.PersisterException;
+
 
 /**
  * API for management of Plan(s).
@@ -68,6 +76,7 @@ public class PlansResource extends PrettyJsonResource {
     private DefaultPlanCoordinator planCoordinator;
     private ConfigStore configStore;
     private StateStore stateStore;
+    private ServiceSpec serviceSpec;
     private final Object planManagersLock = new Object();
 
     /**
@@ -97,16 +106,31 @@ public class PlansResource extends PrettyJsonResource {
         this.configStore = configStore;
         return this;
     }
+
     public PlansResource setStateStore(StateStore stateStore) {
         this.stateStore = stateStore;
         return this;
     }
+
+    public PlansResource setServiceSpec(ServiceSpec serviceSpec) {
+        this.serviceSpec = serviceSpec;
+        return this;
+    }
+
+    private static PersisterCache getPersisterCache(StateStore stateStore) {
+        Persister persister = stateStore.getPersister();
+        if (!(persister instanceof PersisterCache)) {
+            return null;
+        }
+        return (PersisterCache) persister;
+    }
+
     /**
      * Returns list of all configured plans.
      */
     @GET
     @Path("/plans")
-    public Response listPlans() {
+    public Response listPlans() throws ConfigStoreException {
         SchedulerConfig schedulerConfig = SchedulerConfig.fromEnv();
         DefaultPodSpec podSpec = DefaultPodSpec.newBuilder(schedulerConfig.getExecutorURI())
                                 .count(1)
@@ -126,15 +150,38 @@ public class PlansResource extends PrettyJsonResource {
                                                 .build())
                                         .build())
                                 .build();
+        ArrayList<PodSpec> podSpecs = new ArrayList<PodSpec>();
+        podSpecs.addAll(serviceSpec.getPods());
+        podSpecs.add(podSpec);
+
+        Collection<ConfigValidator<ServiceSpec>> configValidators = Collections.emptyList();
+        ConfigurationUpdater<ServiceSpec> configurationUpdater = new DefaultConfigurationUpdater(
+            stateStore, configStore, DefaultServiceSpec.getComparatorInstance(), configValidators);
+        JeidServiceSpec newServiceSpec = JeidServiceSpec.newBuilder(serviceSpec, podSpecs).build();
+        configurationUpdater.updateConfiguration(newServiceSpec);
+        PersisterCache cache = getPersisterCache(stateStore);
+        try {
+            logger.info("Refreshing state store cache...");
+            logger.info("Before:\n- tasks: {}\n- properties: {}",
+                    stateStore.fetchTaskNames(), stateStore.fetchPropertyKeys());
+            cache.refresh();
+            logger.info("After:\n- tasks: {}\n- properties: {}",
+                    stateStore.fetchTaskNames(), stateStore.fetchPropertyKeys());
+        } catch (PersisterException ex) {
+            logger.error("Failed to refresh state cache", ex);
+            return Response.serverError().build();
+        }
+
+
         Strategy serial = StrategyFactory.generateForPhase("serial");
         DefaultStepFactory stepFactory = new DefaultStepFactory(configStore, stateStore);
         DefaultPhaseFactory phaseFactory = new DefaultPhaseFactory(stepFactory);
         //Plan plan = new DeployPlanFactory(phaseFactory).getPlan()
-        ArrayList<Phase> list_of_phases = new ArrayList<Phase>();
+        ArrayList<Phase> phases = new ArrayList<Phase>();
         Phase phase = phaseFactory.getPhase(podSpec, serial);
         System.out.println(phase);
-        list_of_phases.add(phase);
-        Plan plan = new DefaultPlan("hellomeplan", list_of_phases);
+        phases.add(phase);
+        Plan plan = new DefaultPlan("hellomeplan", phases);
         System.out.println(plan);
         DefaultPlanManager planManager = new DefaultPlanManager(plan);
         plan.proceed();

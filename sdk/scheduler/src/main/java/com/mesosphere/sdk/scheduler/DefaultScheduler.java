@@ -141,6 +141,7 @@ public class DefaultScheduler extends AbstractScheduler {
         plansResource.setPlanCoordinator(planCoordinator);
         plansResource.setStateStore(stateStore);
         plansResource.setConfigStore(configStore);
+        plansResource.setServiceSpec(serviceSpec);
 
         podResource.setTaskKiller(taskKiller);
         return planCoordinator;
