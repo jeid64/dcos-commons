@@ -2,6 +2,8 @@ package com.mesosphere.sdk.state;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.mesosphere.sdk.offer.TaskUtils;
+import com.mesosphere.sdk.offer.taskdata.TaskLabelWriter;
+import com.mesosphere.sdk.specification.PodInstance;
 import com.mesosphere.sdk.storage.Persister;
 import com.mesosphere.sdk.storage.PersisterException;
 import com.mesosphere.sdk.storage.PersisterUtils;
@@ -193,6 +195,18 @@ public class StateStore {
             throw new StateStoreException(
                     Reason.NOT_FOUND,
                     String.format("Dropping TaskStatus with unknnown TaskID: %s", status));
+        }
+
+        // jeid
+        if (status.getState().equals(Protos.TaskState.TASK_GONE_BY_OPERATOR)) {
+            Optional<Protos.TaskInfo> taskInfoOptional = fetchTask(taskName);
+            if(taskInfoOptional.isPresent()) {
+                Protos.TaskInfo taskInfo = taskInfoOptional.get();
+                Protos.TaskInfo newTaskInfo = taskInfo.toBuilder().setLabels(new TaskLabelWriter(taskInfo).setPermanentlyFailed().toProto()).build();
+                ArrayList<Protos.TaskInfo> newTaskInfos = new ArrayList<Protos.TaskInfo>();
+                newTaskInfos.add(newTaskInfo);
+                storeTasks(newTaskInfos);
+            }
         }
 
         String path = getTaskStatusPath(taskName);

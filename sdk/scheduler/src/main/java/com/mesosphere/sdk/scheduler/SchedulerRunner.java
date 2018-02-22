@@ -235,6 +235,11 @@ public class SchedulerRunner implements Runnable {
                     .setType(Protos.FrameworkInfo.Capability.Type.REGION_AWARE));
         }
 
+        if (Capabilities.getInstance().supportsPartitionAwareness()) {
+            fwkInfoBuilder.addCapabilities(Protos.FrameworkInfo.Capability.newBuilder()
+                    .setType(Protos.FrameworkInfo.Capability.Type.PARTITION_AWARE));
+        }
+
         return fwkInfoBuilder.build();
     }
 
