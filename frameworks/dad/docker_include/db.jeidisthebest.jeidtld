@@ -1,0 +1,10 @@
+$TTL    604800
+@       IN      SOA     localhost. root.localhost. (
+                              1         ; Serial
+                              1         ; Refresh
+                              1         ; Retry
+                              1         ; Expire
+                              1 )       ; Negative Cache TTL
+;
+@       IN      NS      localhost.
+@       IN      DNAME   thisdcos.directory.
